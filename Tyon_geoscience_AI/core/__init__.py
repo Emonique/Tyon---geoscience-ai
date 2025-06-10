@@ -1,2 +1,5 @@
-# core/__init__.py
-from .trap_predictor import trap_predictor
+from .trap_predictor import (
+    compute_trap_likelihood,
+    detect_leaky_zones,
+    predict_traps
+)
