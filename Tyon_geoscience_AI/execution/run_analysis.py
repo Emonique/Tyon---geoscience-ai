@@ -1,3 +1,11 @@
+import os
+import sys
+
+# Add this at the top of your script - BEFORE other imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+sys.path.insert(0, parent_dir)
+
 import numpy as np
 from core import fractal_analysis, entropy_calc, rqi_model, trap_predictor
 from utils import data_loader, data_simulator, unit_converter
