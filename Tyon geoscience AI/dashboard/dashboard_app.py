@@ -23,23 +23,23 @@ with st.sidebar:
         index=0,
         help="Select the application domain"
     )
-    
+
     units = st.radio(
         "Data Units",
         ["metric", "imperial"],
         index=0,
         help="Select measurement units in input data"
     )
-    
+
     uploaded_file = st.file_uploader(
         "Upload Well Data (CSV)", 
         type="csv",
         help="Upload CSV with depth, porosity, permeability, and lithology columns"
     )
-    
+
     st.divider()
     st.subheader("Analysis Parameters")
-    
+
     if application == "hydrocarbon":
         trap_threshold = st.slider(
             "Trap Confidence Threshold", 
@@ -58,7 +58,7 @@ with st.sidebar:
             50, 300, 150, 5,
             help="Minimum temperature for geothermal potential"
         )
-    
+
     run_analysis = st.button("Run Analysis", type="primary")
 
 # Application description
@@ -77,43 +77,34 @@ system = GeoscienceAnalysisSystem(application=application)
 
 # Main dashboard layout
 if uploaded_file and run_analysis:
-    # Load data
     data = load_well_data(uploaded_file, units=units)
     df = pd.DataFrame(data)
-    
-    # Display raw data preview
+
     with st.expander("Raw Data Preview"):
         st.dataframe(df.head(10))
-    
-    # Create progress bar
+
     progress_bar = st.progress(0, text="Analyzing subsurface data...")
-    
-    # Run analysis
+
     results = system.analyze_dataset(data)
     progress_bar.progress(40, text="Generating visualizations...")
-    
-    # Unified dashboard
+
     st.subheader("Integrated Analysis Dashboard")
     col1, col2 = st.columns(2)
-    
-    # Extract results
+
     geo_memory = results["data_points"]
     depths = [d['depth'] for d in geo_memory]
     entropies = [d['entropy'] for d in geo_memory]
     fractal_dims = [d['fractal_dim'] for d in geo_memory]
     lithologies = [d['lithology'] for d in geo_memory]
-    
-    # Create figure
+
     fig, axs = plt.subplots(3, 2, figsize=(14, 12))
     fig.suptitle("Tyon Geoscience Analysis Dashboard", fontsize=16, fontweight='bold')
-    
-    # Plot 1: Entropy Evolution
+
     axs[0, 0].plot(entropies, 'o-', color='navy')
     axs[0, 0].set_title("Entropy Evolution")
     axs[0, 0].set_xlabel("Sample Index")
     axs[0, 0].set_ylabel("Entropy (bits)")
-    
-    # Plot 2: Application-specific plot
+
     if application == "hydrocarbon":
         rqi_vals = [np.mean(d['rqi']) for d in geo_memory]
         sc = axs[0, 1].scatter(depths, rqi_vals, c=entropies, cmap='viridis', s=80)
@@ -142,23 +133,19 @@ if uploaded_file and run_analysis:
         axs[0, 1].set_xlabel("Depth (m)")
         axs[0, 1].set_ylabel("Temperature (°C)")
         fig.colorbar(sc, ax=axs[0, 1], label='Entropy (bits)')
-    
-    # Plot 3: Fractal Dimension Distribution
+
     unique_litho = list(set(lithologies))
     colors = plt.cm.tab10.colors[:len(unique_litho)]
-    
+
     for i, litho in enumerate(unique_litho):
-        litho_dims = [fd for j, fd in enumerate(fractal_dims) 
-                     if lithologies[j] == litho]
-        axs[1, 0].hist(litho_dims, bins=10, alpha=0.7, color=colors[i], 
-                      label=litho, density=True)
-    
+        litho_dims = [fd for j, fd in enumerate(fractal_dims) if lithologies[j] == litho]
+        axs[1, 0].hist(litho_dims, bins=10, alpha=0.7, color=colors[i], label=litho, density=True)
+
     axs[1, 0].set_title("Fractal Dimension by Lithology")
     axs[1, 0].set_xlabel("Fractal Dimension")
     axs[1, 0].set_ylabel("Density")
     axs[1, 0].legend()
-    
-    # Plot 4: Thermodynamic Profile
+
     if application == "geothermal":
         temps = [d.get('temperature', 0) for d in geo_memory]
         ratios = [d.get('heat_capacity_ratio', 0) for d in geo_memory]
@@ -166,7 +153,7 @@ if uploaded_file and run_analysis:
         axs[1, 1].set_xlabel("Depth (m)")
         axs[1, 1].set_ylabel("Temperature (°C)", color='orange')
         axs[1, 1].tick_params(axis='y', labelcolor='orange')
-        
+
         ax2 = axs[1, 1].twinx()
         ax2.plot(depths, ratios, 's-', color='purple', label='Cp/Cv Ratio')
         ax2.set_ylabel("Heat Capacity Ratio", color='purple')
@@ -178,76 +165,59 @@ if uploaded_file and run_analysis:
         axs[1, 1].set_title("Pressure Profile")
         axs[1, 1].set_xlabel("Depth (m)")
         axs[1, 1].set_ylabel("Pressure (MPa)")
-    
-    # Plot 5: Fractal Dimension vs Entropy
+
     sc = axs[2, 0].scatter(fractal_dims, entropies, c=depths, cmap='viridis', s=80)
     axs[2, 0].set_title("Fractal Dimension vs Entropy")
     axs[2, 0].set_xlabel("Fractal Dimension")
     axs[2, 0].set_ylabel("Entropy (bits)")
     fig.colorbar(sc, ax=axs[2, 0], label='Depth (m)')
-    
-    # Plot 6: Porosity vs Permeability
+
     mean_porosities = [np.mean(d['porosity']) for d in geo_memory]
     permeabilities = [d['permeability'] for d in geo_memory]
-    sc = axs[2, 1].scatter(
-        mean_porosities, 
-        permeabilities, 
-        c=entropies, 
-        cmap='plasma', 
-        s=80
-    )
+    sc = axs[2, 1].scatter(mean_porosities, permeabilities, c=entropies, cmap='plasma', s=80)
     axs[2, 1].set_title("Porosity vs Permeability")
     axs[2, 1].set_xlabel("Mean Porosity (%)")
     axs[2, 1].set_ylabel("Permeability (mD)")
     fig.colorbar(sc, ax=axs[2, 1], label='Entropy (bits)')
-    
+
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     progress_bar.progress(70, text="Finalizing dashboard...")
-    
-    # Display in Streamlit
+
     col1, col2 = st.columns([3, 1])
     with col1:
         st.pyplot(fig)
-    
-    # Save report
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     report_name = f"reports/{application}_dashboard_{timestamp}.png"
     plt.savefig(report_name, dpi=150)
     plt.close()
-    
-    # Results section
+
     st.subheader("Analysis Results")
     predictions = results["predictions"]
-    
+
     if predictions:
         st.success(f"✅ Found {len(predictions)} significant zones")
-        
-        # Create results dataframe
         results_df = pd.DataFrame(predictions)
         results_df = results_df[['depth', 'lithology', 'confidence', 'entropy', 'fractal_dim']]
         results_df['confidence'] = results_df['confidence'].round(3)
         results_df['entropy'] = results_df['entropy'].round(3)
         results_df['fractal_dim'] = results_df['fractal_dim'].round(2)
-        
-        # Add leak risk for environmental apps
+
         if application in ["contamination", "groundwater"]:
             results_df['leak_risk'] = [z.get('leak_risk', False) for z in predictions]
-        
-        # Display table
+
         st.dataframe(results_df.sort_values('confidence', ascending=False))
-        
-        # Highlight critical zones
+
         if application == "contamination" and any(results_df['leak_risk']):
             leak_zones = results_df[results_df['leak_risk']]
             st.warning(f"⚠️ High leak risk detected at {len(leak_zones)} depth(s)")
             st.dataframe(leak_zones)
     else:
         st.warning("⚠️ No significant zones detected with current parameters")
-    
+
     progress_bar.progress(100, text="Analysis complete!")
     st.balloons()
-    
-    # Download links
+
     with col2:
         st.download_button(
             label="Download Dashboard",
@@ -255,7 +225,7 @@ if uploaded_file and run_analysis:
             file_name=os.path.basename(report_name),
             mime="image/png"
         )
-        
+
         st.download_button(
             label="Download Results (CSV)",
             data=pd.DataFrame(results["data_points"]).to_csv().encode('utf-8'),
@@ -267,9 +237,9 @@ elif run_analysis:
 else:
     st.info("Upload a CSV file and click 'Run Analysis' to begin")
 
-# Application-specific data requirements
 st.divider()
 st.subheader("Data Requirements")
+
 app_requirements = {
     "hydrocarbon": """
     **Required Columns:**  
@@ -317,7 +287,6 @@ app_requirements = {
 
 st.markdown(app_requirements[application])
 
-# Sample data download
 sample_data = {
     "hydrocarbon": "data/sample_hydrocarbon.csv",
     "groundwater": "data/sample_groundwater.csv",
@@ -332,4 +301,4 @@ if os.path.exists(sample_data[application]):
             f,
             file_name=f"sample_{application}_data.csv",
             mime="text/csv"
-    )
+        )
