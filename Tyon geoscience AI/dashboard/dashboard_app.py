@@ -1,3 +1,23 @@
+# Check and install required packages
+import subprocess
+import sys
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+required = {
+    'matplotlib': 'matplotlib',
+    'pandas': 'pandas',
+    'numpy': 'numpy'
+}
+
+for package, import_name in required.items():
+    try:
+        __import__(import_name)
+    except ImportError:
+        install(package)
+
+
 import streamlit as st
 import pandas as pd
 import numpy as np
