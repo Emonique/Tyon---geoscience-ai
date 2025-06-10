@@ -47,3 +47,16 @@ def load_from_las(filepath):
     """Placeholder for LAS file loader"""
     # This would use lasio library in a real implementation
     return load_well_data('converted.csv')  # Temporary fallback
+def load_well_data(filepath, units='metric'):
+    # ... existing code ...
+    
+    # Validate required columns
+    required = ['depth', 'porosity', 'permeability']
+    if application == 'geothermal':
+        required = ['depth', 'temperature']
+    
+    missing = [col for col in required if col not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns: {', '.join(missing)}")
+    
+    return df.to_dict('records')
