@@ -30,6 +30,39 @@ st.title("🌋 Tyon Geoscience AI - Subsurface Analysis Dashboard")
 
 # ... rest of your original code ...
 
+
+import sys
+import os
+from pathlib import Path
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+# ──── CRITICAL FIX: Add project root to Python path ────
+current_dir = Path(__file__).resolve().parent  # /Tyon_geoscience_AI/dashboard
+project_root = current_dir.parent  # /Tyon_geoscience_AI
+sys.path.insert(0, str(project_root))
+
+# Now import your custom modules
+try:
+    from execution.run_analysis import GeoscienceAnalysisSystem
+    from utils.data_loader import load_well_data
+except ImportError as e:
+    st.error(f"Import Error: {e}")
+    st.stop()
+
+# Rest of your code remains unchanged...
+# Create reports directory if not exists
+os.makedirs("reports", exist_ok=True)
+
+# Dashboard layout
+st.set_page_config(page_title="Tyon Geoscience AI", layout="wide")
+st.title("🌋 Tyon Geoscience AI - Subsurface Analysis Dashboard")
+
+# ... rest of your original code ...
+
 import streamlit as st
 import pandas as pd
 import numpy as np
