@@ -1,2 +1,2 @@
 # core/__init__.py
-from .trap_prediction import trap_predictor
+from .trap_predictor import trap_predictor
