@@ -97,7 +97,7 @@ system = GeoscienceAnalysisSystem(application=application)
 
 # Main dashboard layout
 if uploaded_file and run_analysis:
-    data = load_well_data(uploaded_file, units=units)
+    data = load_well_data(uploaded_file, application=application, units=units)
     df = pd.DataFrame(data)
 
     with st.expander("Raw Data Preview"):
