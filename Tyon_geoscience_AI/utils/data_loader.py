@@ -1,8 +1,8 @@
- import pandas as pd
+import pandas as pd
 import numpy as np
 
 def detect_application(df):
-    """Infer application type based on column presence."""
+    """Infer application type based on column presence"""
     cols = df.columns.str.lower()
     if cols.str.contains('temperature').any():
         return 'geothermal'
@@ -10,14 +10,13 @@ def detect_application(df):
         return 'contamination'
     if cols.str.contains('hydraulic|aquifer').any():
         return 'groundwater'
-    if cols.str.contains('porosity').any() and cols.str.contains('permeability').any():
+    if 'porosity' in cols.values and 'permeability' in cols.values:
         return 'hydrocarbon'
     return 'unknown'
 
 def load_well_data(filepath, application=None, units='metric'):
     """
-    Load well data from CSV with flexible column mapping and auto-detect application type if needed.
-    Returns a list of dictionaries.
+    Load well data from CSV with flexible column mapping and application auto-detection
     """
     df = pd.read_csv(filepath)
 
@@ -35,43 +34,40 @@ def load_well_data(filepath, application=None, units='metric'):
             col_map[col] = 'lithology'
         elif 'temp' in lower_col:
             col_map[col] = 'temperature'
-        elif 'hydraulic' in lower_col and 'conductivity' in lower_col:
+        elif 'conductivity' in lower_col and 'hydraulic' in lower_col:
             col_map[col] = 'hydraulic_conductivity'
-        elif 'contaminant' in lower_col or 'risk' in lower_col:
+        elif 'risk' in lower_col or 'contaminant' in lower_col:
             col_map[col] = 'contaminant_risk'
 
-    df.rename(columns=col_map, inplace=True)
+    df = df.rename(columns=col_map)
 
-    # Fill in default lithology if missing
+    # Handle missing lithology
     if 'lithology' not in df.columns:
         df['lithology'] = 'sandstone'
 
-    # Convert units
+    # Convert units if needed
     if units == 'imperial':
         if 'depth' in df.columns:
-            df['depth'] = df['depth'] * 0.3048  # ft to m
+            df['depth'] *= 0.3048
         if 'permeability' in df.columns:
-            df['permeability'] = df['permeability'] * 0.986923e-15  # mD to m²
+            df['permeability'] *= 0.986923
         if 'temperature' in df.columns:
-            df['temperature'] = (df['temperature'] - 32) * 5 / 9  # °F to °C
+            df['temperature'] = (df['temperature'] - 32) * 5.0 / 9.0
 
-    # Auto-detect application if needed
+    # Detect application if not provided
     if application is None or application == 'auto':
         application = detect_application(df)
-        print(f"Detected application: {application}")
 
-    # Define required columns
-    required_columns = {
-        'geothermal': ['depth', 'temperature'],
-        'contamination': ['depth', 'porosity', 'permeability'],
-        'groundwater': ['depth', 'porosity', 'permeability'],
-        'hydrocarbon': ['depth', 'porosity', 'permeability']
-    }
-
-    if application not in required_columns:
+    # Validate required columns per application
+    required = []
+    if application == 'geothermal':
+        required = ['depth', 'temperature']
+    elif application in ['contamination', 'groundwater', 'hydrocarbon']:
+        required = ['depth', 'porosity', 'permeability']
+    else:
         raise ValueError(f"Could not detect a valid application type. Columns: {list(df.columns)}")
 
-    missing = [col for col in required_columns[application] if col not in df.columns]
+    missing = [col for col in required if col not in df.columns]
     if missing:
         raise ValueError(f"Missing required columns for {application} analysis: {', '.join(missing)}")
 
